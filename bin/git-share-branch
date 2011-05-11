@@ -1,0 +1,5 @@
+#!/bin/bash
+
+colorize git config "branch.$(git branch-name).remote" "origin"
+colorize git config "branch.$(git branch-name).merge" "refs/heads/$(git branch-name)"
+colorize git upstream-push

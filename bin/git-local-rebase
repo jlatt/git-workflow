@@ -1,0 +1,14 @@
+#!/bin/bash
+RED="\033[01;31m"
+GREEN="\033[01;32m"
+NORMAL="\033[m"
+
+remote="$(git config "branch.$(git branch-name).remote")"
+upstream="$(git config "branch.$(git branch-name).merge")"
+if [[ "$remote" && "$upstream" ]]; then
+	colorize git fetch "$remote" "$upstream"
+	colorize git rebase -i "$(git merge-base HEAD FETCH_HEAD)"
+else
+	echo -e "${RED}Cannot rebase. This branch doesn't track an upstream branch.${NORMAL}"
+	exit 1
+fi

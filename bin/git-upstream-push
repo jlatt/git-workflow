@@ -1,0 +1,17 @@
+#!/bin/bash
+RED="\033[01;31m"
+GREEN="\033[01;32m"
+NORMAL="\033[m"
+
+branch="$1"
+if [[ -z "$branch" ]]; then
+	branch="$(git branch-name)"
+fi
+remote="$(git config "branch.$branch.remote")"
+upstream="$(git config "branch.$branch.merge")"
+if [[ "$remote" && "$upstream" ]]; then
+	colorize git push "$remote" "HEAD:$upstream"
+else
+	echo -e "${RED}This branch does not have a tracking branch.${NORMAL}"
+	exit 1
+fi

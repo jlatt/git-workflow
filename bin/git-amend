@@ -1,0 +1,2 @@
+#!/bin/bash
+colorize git commit --amend -C HEAD "$@"
