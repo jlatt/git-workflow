@@ -1,0 +1,8 @@
+#!/bin/bash
+upstream="$(git upstream-branch)"
+if [[ "$upstream" ]]; then
+    colorize git diff "$@" "${upstream}.."
+else
+    echo -e "No upstream branch."
+    exit 1
+fi

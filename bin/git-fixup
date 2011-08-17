@@ -1,6 +1,0 @@
-#!/bin/bash
-commit="HEAD"
-last_message="$(git log -1 --format=format:%s "$commit")"
-base_message="${last_message##fixup! }"
-fixup_message="fixup! ${base_message}"
-colorize git commit -m "$fixup_message" "$@"

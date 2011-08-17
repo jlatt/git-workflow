@@ -1,0 +1,10 @@
+#!/bin/bash
+branch="$1"
+if [[ "$branch" ]]; then
+    rev="$(git rev-parse HEAD)"
+    colorize git checkout "$branch"
+    colorize git merge --ff-only "$rev"
+else
+    echo "usage: $(basename $0) <branch>"
+    exit 1
+fi

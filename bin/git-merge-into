@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function usage() {
+    cat <<EOF
+usage: $(basename $0) [-m <message>] <commit>
+  This command must be run from a branch.
+EOF
+    exit 1
+}
+
+branch="$(git branch-name)"
+message="Merge branch '$branch'"
+while getopts ':m:' option; do
+    case "$option" in
+        m)
+            message="$OPTARG"
+            ;;
+        *)
+            usage
+    esac
+done
+shift "$((OPTIND-1))"
+merge_branch="$1"
+if [[ "$branch" && "$merge_branch" && "$message" ]]; then
+    colorize git fetch
+    colorize git checkout "$merge_branch"
+    if colorize git merge --no-ff -m "$message" "$branch"; then
+        git local-push "$branch"
+    else
+        cat <<EOF
+Automatic merge failed. To continue:
+  1. Resolve conflicts.
+  2. git commit"
+  3. git local-push "$branch"
+EOF
+        exit 1
+    fi
+else
+    usage
+fi
