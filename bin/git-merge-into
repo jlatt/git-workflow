@@ -22,17 +22,18 @@ done
 shift "$((OPTIND-1))"
 merge_branch="$1"
 if [[ "$branch" && "$merge_branch" && "$message" ]]; then
-    colorize git fetch
-    colorize git checkout "$merge_branch"
-    if colorize git merge --no-ff -m "$message" "$branch"; then
-        git local-push "$branch"
+    incoming_count="$(git log --oneline ..$merge_branch | wc -l)"
+    if [[ "$incoming_count" -gt 0 ]]; then
+        colorize git checkout "$merge_branch"
+        if colorize git merge --no-ff -m "$message" "$branch"; then
+            git local-push "$branch"
+        else
+            echo -e "When complete, run:"
+            echo -e "git local-push '$branch'"
+            exit 1
+        fi
     else
-        cat <<EOF
-Automatic merge failed. To continue:
-  1. Resolve conflicts.
-  2. git commit"
-  3. git local-push "$branch"
-EOF
+        echo -e "$merge_branch has no incoming changes for this branch. Perhaps you need to fetch?"
         exit 1
     fi
 else
