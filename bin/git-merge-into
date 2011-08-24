@@ -9,7 +9,6 @@ EOF
 }
 
 branch="$(git branch-name)"
-message="Merge branch '$branch'"
 while getopts ':m:' option; do
     case "$option" in
         m)
@@ -20,7 +19,10 @@ while getopts ':m:' option; do
     esac
 done
 shift "$((OPTIND-1))"
+
 merge_branch="$1"
+message="${message-Merge branch '$branch' into '$merge_branch'}"
+
 if [[ "$branch" && "$merge_branch" && "$message" ]]; then
     incoming_count="$(git log --oneline ..$merge_branch | wc -l)"
     if [[ "$incoming_count" -gt 0 ]]; then
