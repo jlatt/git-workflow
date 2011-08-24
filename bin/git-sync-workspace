@@ -1,0 +1,35 @@
+#!/bin/bash
+remote="$(git config workspace.remote)"
+prefix="$(git config workspace.prefix)"
+
+function usage() {
+    echo -e "usage: $(basename $0) [push args]"
+    echo -e "\tgit configs for workspace.remote and workspace.prefix are required."
+    echo -e "\te.g. git config workspace.remote foo"
+    echo -e "\t     git config workspace.prefix laptop"
+    exit 1
+}
+
+
+function remote_workspace_refs() {
+    git ls-remote "$remote" | egrep "[[:space:]]refs/heads/${prefix}/.+" | awk '{ print $2 }'
+}
+
+function verify_ref() {
+    git show-ref --quiet --verify "refs/heads/$1"
+}
+
+if [[ "$remote" && "$prefix" ]]; then
+    # Update local branches.
+    push_specs=( "+refs/heads/*:refs/heads/$prefix/*" )
+	# Clean up old branches.
+    for full_branch in $(remote_workspace_refs); do
+        branch="${full_branch##refs/heads/$prefix/}"
+        if ! verify_ref "$branch"; then
+            push_specs[${#push_specs[@]}]=":${full_branch}"
+        fi
+    done
+    colorize git push "$@" "$remote" "${push_specs[@]}"
+else
+    usage
+fi
