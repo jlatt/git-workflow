@@ -2,17 +2,27 @@
 
 function usage() {
     cat <<EOF
-usage: $(basename $0) [-m <message>] <commit>
+usage: $(basename $0) [-c] [-a] [-m <message>] <commit>
   This command must be run from a branch.
+  -c  Continue a merge-into after resolving conflicts.
+  -a  Abort a merge-into in progress.
 EOF
     exit 1
 }
 
+merge_into="$(git config ext.mergeinto)"
 branch="$(git branch-name)"
-while getopts ':m:' option; do
+
+while getopts ':am:c' option; do
     case "$option" in
         m)
             message="$OPTARG"
+            ;;
+        c)
+            complete="true"
+            ;;
+        a)
+            abort="true"
             ;;
         *)
             usage
@@ -21,23 +31,52 @@ done
 shift "$((OPTIND-1))"
 
 merge_branch="$1"
-message="${message-Merge branch '$branch' into '$merge_branch'}"
+message="${message-Merge into '$merge_branch'}"
 
-if [[ "$branch" && "$merge_branch" && "$message" ]]; then
-    incoming_count="$(git log --oneline ..$merge_branch | wc -l)"
-    if [[ "$incoming_count" -gt 0 ]]; then
-        colorize git checkout "$merge_branch"
-        if colorize git merge --no-ff -m "$message" "$branch"; then
-            git local-push "$branch"
+if [[ "$abort" ]]; then
+    if [[ "$merge_into" ]]; then
+        colorize git merge --abort
+        colorize git checkout "$merge_into"
+        colorize git config --unset ext.mergeinto
+    else
+        echo -e "Nothing to abort. Not in a merge-into."
+        exit 1
+    fi
+elif [[ "$complete" ]]; then
+    if [[ "$(git ls-files -u | wc -l)" -gt 0 ]]; then
+        echo -e "There are unmerged files. Fix merge conflicts, commit, and re-run this script."
+        exit 1
+    else
+        if [[ "$merge_into" ]]; then
+            git local-push "$merge_into"
+            colorize git config --unset ext.mergeinto
         else
-            echo -e "When complete, run:"
-            echo -e "git local-push '$branch'"
+            echo -e "There is no branch to merge-into. Perhaps you haven't merged yet?"
+            exit 1
+        fi
+    fi
+elif [[ "$merge_into" ]]; then
+    echo -e "You are already in a merge-into. Perhaps you should run 'git merge-into -c'?"
+    exit 1
+else
+    if [[ "$branch" && "$merge_branch" && "$message" ]]; then
+        incoming_count="$(git log --oneline ..$merge_branch | wc -l)"
+        if [[ "$incoming_count" -gt 0 ]]; then
+            colorize git checkout "$(git rev-parse "$merge_branch")"
+            if colorize git merge --no-ff -m "$message" "$branch"; then
+                git local-push "$branch"
+                echo -e "Merge-into complete."
+            else
+                # Store the original branch for updating later.
+                colorize git config ext.mergeinto "$branch"
+                echo -e "Run 'git merge-into -c' after committing."
+                exit 1
+            fi
+        else
+            echo -e "$merge_branch has no incoming changes for this branch. Perhaps you need to fetch?"
             exit 1
         fi
     else
-        echo -e "$merge_branch has no incoming changes for this branch. Perhaps you need to fetch?"
-        exit 1
+        usage
     fi
-else
-    usage
 fi
