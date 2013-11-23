@@ -60,20 +60,14 @@ elif [[ "$merge_into" ]]; then
     exit 1
 else
     if [[ "$branch" && "$merge_branch" && "$message" ]]; then
-        incoming_count="$(git log --oneline ..$merge_branch | wc -l)"
-        if [[ "$incoming_count" -gt 0 ]]; then
-            colorize git checkout "$(git rev-parse "$merge_branch")"
-            if colorize git merge --no-ff -m "$message" "$branch"; then
-                git local-push "$branch"
-                echo -e "Merge-into complete."
-            else
-                # Store the original branch for updating later.
-                colorize git config ext.mergeinto "$branch"
-                echo -e "Run 'git merge-into -c' after committing."
-                exit 1
-            fi
+        colorize git checkout "$(git rev-parse "$merge_branch")"
+        if colorize git merge --no-ff -m "$message" "$branch"; then
+            git local-push "$branch"
+            echo -e "Merge-into complete."
         else
-            echo -e "$merge_branch has no incoming changes for this branch. Perhaps you need to fetch?"
+                # Store the original branch for updating later.
+            colorize git config ext.mergeinto "$branch"
+            echo -e "Run 'git merge-into -c' after committing."
             exit 1
         fi
     else
